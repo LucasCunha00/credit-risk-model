@@ -31,7 +31,7 @@ def train(data_path: str, model_output: str = "model.pkl", nrows: int = None) ->
     model = RandomForestClassifier(
         n_estimators=200,
         max_depth=10,
-        class_weight="balanced",   # essencial para dados desbalanceados
+        class_weight="balanced",   
         random_state=42,
         n_jobs=-1
     )
@@ -43,7 +43,7 @@ def train(data_path: str, model_output: str = "model.pkl", nrows: int = None) ->
     print("\nResultados do modelo:")
     print(classification_report(y_test, y_pred, target_names=["Adimplente", "Inadimplente"]))
 
-    # salva modelo + colunas juntos para garantir consistência na inferência
+
     artifact = {
         "model": model,
         "feature_columns": list(X_train.columns)

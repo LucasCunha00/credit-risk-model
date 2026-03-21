@@ -22,7 +22,7 @@ def load_data(path: str, nrows: int = None) -> pd.DataFrame:
     return df
 
 
-def preprocess_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+def preprocess_data(df: pd.DataFrame, max_cardinality: int = 30) -> tuple[pd.DataFrame, pd.Series]:
     """
     Realiza o pré-processamento completo:
     - Filtra status relevantes
@@ -44,13 +44,20 @@ def preprocess_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     X = df.drop("target", axis=1)
     y = df["target"]
 
+    # remove categóricas com alta cardinalidade (ex: descrições livres, CEPs)
+    categorical_cols = X.select_dtypes(include="object").columns
+    high_cardinality = [col for col in categorical_cols if X[col].nunique() > max_cardinality]
+    if high_cardinality:
+        print(f"Removendo {len(high_cardinality)} colunas com alta cardinalidade: {high_cardinality}")
+    X = X.drop(columns=high_cardinality)
+
     # trata nulos numéricos com mediana
     numeric_cols = X.select_dtypes(include=["number"]).columns
     for col in numeric_cols:
         if X[col].isnull().any():
             X[col] = X[col].fillna(X[col].median())
 
-    # trata nulos categóricos
+    # trata nulos categóricos restantes
     categorical_cols = X.select_dtypes(include="object").columns
     for col in categorical_cols:
         X[col] = X[col].fillna("unknown")

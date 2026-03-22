@@ -62,6 +62,12 @@ credit-risk-model/
 │           ├── HistoryTable.jsx
 │           └── ModelMetrics.jsx
 │
+├── assets/                     # Screenshots do dashboard
+│   ├── dashboard_preview.png
+│   ├── result_dashboard.png
+│   ├── history_dashboard.png
+│   └── model_dashboard.png
+│
 ├── data/                       # Datasets (não versionados — ver .gitignore)
 │   ├── accepted_2007_to_2018Q4.csv
 │   └── rejected_2007_to_2018Q4.csv
@@ -107,7 +113,11 @@ O modelo treinado é um **Random Forest Classifier** com os seguintes resultados
 
 ## ▶️ Como Executar
 
+> **Pré-requisitos:** Python 3.10+, Node.js 18+ e Git instalados na sua máquina.
+
 ### 1. Clone o repositório
+
+Abra o terminal e execute:
 
 ```bash
 git clone https://github.com/LucasCunha00/credit-risk-model.git
@@ -115,6 +125,8 @@ cd credit-risk-model
 ```
 
 ### 2. Crie e ative o ambiente virtual
+
+O ambiente virtual isola as dependências do projeto para não conflitar com outros projetos Python.
 
 ```bash
 # Windows
@@ -126,7 +138,9 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Instale as dependências
+> Você saberá que o ambiente está ativo quando aparecer `(.venv)` no início da linha do terminal.
+
+### 3. Instale as dependências Python
 
 ```bash
 pip install -r requirements.txt
@@ -144,21 +158,33 @@ data/
 
 ### 5. Treine o modelo
 
+Este passo processa os dados e gera o arquivo `model.pkl` na raiz do projeto. **Pode demorar alguns minutos** dependendo do hardware.
+
 ```bash
 python src/train_model.py
 ```
 
-Isso irá gerar o arquivo `model.pkl` na raiz do projeto.
+> Você só precisa fazer isso uma vez. Após o `model.pkl` existir, não é necessário retreinar.
 
 ### 6. Suba a API
+
+A API é o "cérebro" do sistema — ela carrega o modelo e responde às requisições de predição. **Mantenha esse terminal aberto** enquanto usar o sistema.
 
 ```bash
 python -m uvicorn api.app:app --reload
 ```
 
-Acesse a documentação interativa em: http://127.0.0.1:8000/docs
+Você verá uma mensagem como:
+
+```
+INFO: Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+```
+
+Isso significa que a API está rodando. Você pode acessar a documentação interativa em: http://127.0.0.1:8000/docs
 
 ### 7. Suba o dashboard
+
+**Abra um novo terminal** (sem fechar o anterior) e execute:
 
 ```bash
 cd dashboard
@@ -166,7 +192,16 @@ npm install
 npm run dev
 ```
 
-Acesse em: http://localhost:5173
+Você verá:
+
+```
+VITE ready in Xms
+➜  Local: http://localhost:5173/
+```
+
+Acesse o dashboard em: **http://localhost:5173**
+
+> Se a porta 5173 já estiver em uso, o Vite usará automaticamente a 5174. Verifique a URL exibida no terminal.
 
 ---
 
@@ -230,6 +265,12 @@ Acesse em: http://localhost:5173
 }
 ```
 
+| Campo                 | Descrição                                          |
+|-----------------------|----------------------------------------------------|
+| `prediction`          | `0` = Adimplente / `1` = Inadimplente              |
+| `default_probability` | Probabilidade estimada de inadimplência (0 a 1)    |
+| `label`               | Classificação textual                              |
+
 ---
 
 ### `POST /explain`
@@ -257,41 +298,81 @@ Retorna as **5 features que mais influenciaram aquela predição específica** v
 }
 ```
 
-| Campo         | Descrição                                              |
-|---------------|--------------------------------------------------------|
-| `feature`     | Nome da feature                                        |
-| `importance`  | Valor SHAP (contribuição para a predição)              |
-| `value`       | Valor da feature naquela predição                      |
-| `direction`   | `"aumenta"` ou `"reduz"` a probabilidade de inadimplência |
+| Campo         | Descrição                                                         |
+|---------------|-------------------------------------------------------------------|
+| `feature`     | Nome da feature                                                   |
+| `importance`  | Valor SHAP (contribuição para a predição)                         |
+| `value`       | Valor da feature naquela predição                                 |
+| `direction`   | `"aumenta"` ou `"reduz"` a probabilidade de inadimplência         |
 
 ---
 
-## 📊 Dashboard
+## 🖥 Dashboard
 
-Interface React com três seções:
+O dashboard é uma interface web interativa que se comunica com a API em tempo real. Para acessá-lo, siga os passos da seção [Como Executar](#-como-executar) e abra **http://localhost:5173** no navegador.
 
-**Predição** — formulário com os 13 campos do cliente, resultado com probabilidade, zona de risco e explicabilidade SHAP mostrando as 5 features mais influentes com direção (↑ aumenta / ↓ reduz risco).
+> **Importante:** a API Python precisa estar rodando em paralelo para o dashboard funcionar. O indicador no canto superior direito mostrará **API ONLINE** (verde) ou **API OFFLINE** (vermelho).
 
-**Histórico** — tabela com todas as predições da sessão, incluindo horário, resultado, probabilidade, FICO, valor do empréstimo, renda, DTI e taxa.
+![Dashboard Preview](assets/dashboard_preview.png)
 
-**Modelo** — informações do modelo carregado, métricas de treino, distribuição de adimplentes/inadimplentes da sessão e stats gerais.
+O dashboard possui três abas:
+
+---
+
+### Aba Predição
+
+Formulário com os 13 campos do perfil financeiro do cliente. Preencha os dados e clique em **Analisar Risco** para obter a predição.
+
+![Resultado](assets/result_dashboard.png)
+
+O resultado exibe:
+- **Classificação** — Adimplente ou Inadimplente
+- **Probabilidade de inadimplência** com barra visual
+- **Zona de risco** — Baixo (0–39%), Médio (40–69%) ou Alto (70–100%)
+- **Por que este resultado?** — as 5 features que mais influenciaram aquela predição via SHAP, com direção (↑ aumenta risco em vermelho / ↓ reduz risco em verde) e valor SHAP individual
+
+---
+
+### Aba Histórico
+
+Registra todas as predições feitas durante a sessão atual.
+
+![Histórico](assets/history_dashboard.png)
+
+Cada linha exibe: horário, resultado, probabilidade, score FICO, valor do empréstimo, renda anual, DTI e taxa de juros.
+
+> O histórico é mantido apenas enquanto o dashboard estiver aberto. Ao recarregar a página, o histórico é limpo.
+
+---
+
+### Aba Modelo
+
+Painel com informações técnicas e estatísticas da sessão.
+
+![Modelo](assets/model_dashboard.png)
+
+Exibe:
+- **Informações do modelo** — tipo, número de estimadores, profundidade máxima, features e versão da API
+- **Métricas de treino** — gráfico com Accuracy, Recall e Precision
+- **Distribuição da sessão** — gráfico de pizza com proporção de adimplentes e inadimplentes analisados
+- **Stats da sessão** — total de análises, probabilidade média, taxa de inadimplência e adimplência
 
 ---
 
 ## 🧪 Testes
 
-Testes automatizados com pytest que rodam **sem precisar do `model.pkl`** (usa mock).
+Testes automatizados com pytest que rodam **sem precisar do `model.pkl`** (usa mock do modelo).
 
 ```bash
 pip install pytest httpx
 pytest tests/test_api.py -v
 ```
 
-| Categoria           | Cobertura                                                      |
-|---------------------|----------------------------------------------------------------|
-| Health endpoints    | `/` e `/health`                                                |
-| Predição            | Inadimplente, Adimplente, label correto                        |
-| Validação de inputs | 9 cenários de input inválido + payload válido                  |
+| Categoria           | Cobertura                                        |
+|---------------------|--------------------------------------------------|
+| Health endpoints    | `/` e `/health`                                  |
+| Predição            | Inadimplente, Adimplente, label correto           |
+| Validação de inputs | 9 cenários inválidos + payload válido            |
 
 ```
 15 passed in 1.37s ✅

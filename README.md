@@ -14,7 +14,8 @@ Sistema de Machine Learning para **predição de risco de inadimplência** com b
 ## 📌 Sumário
 
 - [Visão Geral](#-visão-geral)
-- [Arquitetura](#-arquitetura)
+- [Arquitetura de Solução](#-arquitetura-de-solução)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Tecnologias](#-tecnologias)
 - [Resultados do Modelo](#-resultados-do-modelo)
 - [Como Executar](#-como-executar)
@@ -37,7 +38,62 @@ Dados brutos → Pré-processamento → Treinamento → Avaliação → API REST
 
 ---
 
-## 🏗 Arquitetura
+## 🏛 Arquitetura de Solução
+
+O sistema é dividido em três camadas independentes que se comunicam via HTTP:
+
+```
+┌─────────────────────────────────┐
+│         FRONTEND                │
+│       React + Vite              │
+│       localhost:5173            │
+│                                 │
+│  ┌──────────┐  ┌─────────────┐  │
+│  │Formulário│  │  Resultado  │  │
+│  │ de Input │  │  + SHAP     │  │
+│  └──────────┘  └─────────────┘  │
+│  ┌──────────┐  ┌─────────────┐  │
+│  │Histórico │  │   Métricas  │  │
+│  │ Sessão   │  │  do Modelo  │  │
+│  └──────────┘  └─────────────┘  │
+└───────────────┬─────────────────┘
+                │ HTTP / JSON
+                ▼
+┌─────────────────────────────────┐
+│           BACKEND               │
+│       FastAPI (Python)          │
+│       localhost:8000            │
+│                                 │
+│  GET  /health  → status API     │
+│  POST /predict → predição       │
+│  POST /explain → SHAP values    │
+└───────────────┬─────────────────┘
+                │ joblib.load()
+                ▼
+┌─────────────────────────────────┐
+│            MODELO               │
+│         model.pkl               │
+│                                 │
+│  RandomForestClassifier         │
+│  • 200 estimadores              │
+│  • profundidade máxima: 10      │
+│  • 253 features                 │
+│  • treinado no Lending Club     │
+│    dataset (2007–2018)          │
+└─────────────────────────────────┘
+```
+
+### Camadas
+
+**Frontend (React + Vite)** — interface web que o usuário acessa pelo navegador. Envia os dados do cliente para a API via HTTP e exibe o resultado, a explicabilidade SHAP, o histórico da sessão e as métricas do modelo.
+
+**Backend (FastAPI)** — servidor Python que recebe as requisições do frontend, processa os dados, carrega o modelo e retorna as predições. Também computa os valores SHAP para explicar cada predição individualmente.
+
+**Modelo (model.pkl)** — arquivo gerado pelo treinamento com `scikit-learn`. Contém o `RandomForestClassifier` serializado e a lista de features usadas no treino, garantindo que os dados de entrada sejam sempre alinhados corretamente.
+
+---
+
+## 🏗 Estrutura do Projeto
 
 ```
 credit-risk-model/

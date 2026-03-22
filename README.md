@@ -171,7 +171,8 @@ Acesse a documentação interativa em: [http://127.0.0.1:8000/docs](http://127.0
 ```json
 {
   "prediction": 1,
-  "default_probability": 0.86
+  "default_probability": 0.8223,
+  "label": "Inadimplente"
 }
 ```
 

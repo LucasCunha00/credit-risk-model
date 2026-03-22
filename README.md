@@ -3,10 +3,11 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.x-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
 [![Pytest](https://img.shields.io/badge/Pytest-15%20passed-brightgreen?style=flat&logo=pytest)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Sistema de Machine Learning para **predição de risco de inadimplência** com base em dados reais de crédito (Lending Club, 2007–2018). O projeto cobre todo o pipeline — da ingestão e pré-processamento dos dados até a disponibilização de uma API REST para inferência em tempo real.
+Sistema de Machine Learning para **predição de risco de inadimplência** com base em dados reais de crédito (Lending Club, 2007–2018). O projeto cobre todo o pipeline — da ingestão e pré-processamento dos dados até uma API REST e um dashboard interativo com explicabilidade via SHAP.
 
 ---
 
@@ -18,6 +19,7 @@ Sistema de Machine Learning para **predição de risco de inadimplência** com b
 - [Resultados do Modelo](#-resultados-do-modelo)
 - [Como Executar](#-como-executar)
 - [Usando a API](#-usando-a-api)
+- [Dashboard](#-dashboard)
 - [Testes](#-testes)
 - [Melhorias Futuras](#-melhorias-futuras)
 
@@ -25,12 +27,12 @@ Sistema de Machine Learning para **predição de risco de inadimplência** com b
 
 ## 🎯 Visão Geral
 
-O objetivo deste projeto é prever a **probabilidade de inadimplência** de um cliente a partir de seu perfil financeiro e histórico de crédito. O modelo é treinado sobre dados reais e exposto via API, permitindo integrações com sistemas externos.
+O objetivo deste projeto é prever a **probabilidade de inadimplência** de um cliente a partir de seu perfil financeiro e histórico de crédito. O modelo é treinado sobre dados reais, exposto via API REST e visualizado em um dashboard React com explicabilidade por predição via SHAP.
 
 **Fluxo do projeto:**
 
 ```
-Dados brutos → Pré-processamento → Treinamento → Avaliação → API REST
+Dados brutos → Pré-processamento → Treinamento → Avaliação → API REST → Dashboard
 ```
 
 ---
@@ -41,21 +43,30 @@ Dados brutos → Pré-processamento → Treinamento → Avaliação → API REST
 credit-risk-model/
 │
 ├── api/
-│   └── app.py              # API FastAPI para inferência em tempo real
+│   └── app.py                  # API FastAPI (predict, explain, health)
 │
 ├── src/
-│   ├── data_processing.py  # Limpeza, filtragem e feature engineering
-│   ├── train_model.py      # Treinamento e avaliação do modelo
-│   └── predict.py          # Lógica de predição isolada
+│   ├── data_processing.py      # Limpeza, filtragem e feature engineering
+│   ├── train_model.py          # Treinamento e avaliação do modelo
+│   └── predict.py              # Lógica de predição isolada
 │
 ├── tests/
-│   └── test_api.py         # Testes automatizados com pytest
+│   └── test_api.py             # Testes automatizados com pytest
 │
-├── data/                   # Datasets (não versionados — ver .gitignore)
+├── dashboard/                  # Frontend React + Vite
+│   └── src/
+│       ├── App.jsx
+│       └── components/
+│           ├── PredictionForm.jsx
+│           ├── ResultCard.jsx  # Inclui explicabilidade SHAP
+│           ├── HistoryTable.jsx
+│           └── ModelMetrics.jsx
+│
+├── data/                       # Datasets (não versionados — ver .gitignore)
 │   ├── accepted_2007_to_2018Q4.csv
 │   └── rejected_2007_to_2018Q4.csv
 │
-├── model.pkl               # Modelo serializado após o treinamento
+├── model.pkl                   # Modelo serializado após o treinamento
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -65,14 +76,18 @@ credit-risk-model/
 
 ## 🛠 Tecnologias
 
-| Categoria       | Biblioteca              |
-|-----------------|-------------------------|
-| Linguagem       | Python 3.10+            |
-| Manipulação     | Pandas, NumPy           |
-| Machine Learning| Scikit-learn            |
-| API             | FastAPI, Uvicorn        |
-| Serialização    | Joblib                  |
-| Testes          | Pytest, HTTPX           |
+| Categoria        | Biblioteca                      |
+|------------------|---------------------------------|
+| Linguagem        | Python 3.10+                    |
+| Manipulação      | Pandas, NumPy                   |
+| Machine Learning | Scikit-learn                    |
+| Explicabilidade  | SHAP                            |
+| API              | FastAPI, Uvicorn                |
+| Serialização     | Joblib                          |
+| Frontend         | React, Vite, Tailwind CSS       |
+| Gráficos         | Recharts                        |
+| HTTP Client      | Axios                           |
+| Testes           | Pytest, HTTPX                   |
 
 ---
 
@@ -143,25 +158,32 @@ python -m uvicorn api.app:app --reload
 
 Acesse a documentação interativa em: http://127.0.0.1:8000/docs
 
+### 7. Suba o dashboard
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Acesse em: http://localhost:5173
+
 ---
 
 ## 🔌 Usando a API
 
 ### Endpoints disponíveis
 
-| Método | Endpoint   | Descrição                                  |
-|--------|------------|--------------------------------------------|
-| GET    | `/`        | Status básico da API                       |
-| GET    | `/health`  | Status detalhado + informações do modelo   |
-| POST   | `/predict` | Realiza a predição de risco de crédito     |
+| Método | Endpoint    | Descrição                                       |
+|--------|-------------|-------------------------------------------------|
+| GET    | `/`         | Status básico da API                            |
+| GET    | `/health`   | Status detalhado + informações do modelo        |
+| POST   | `/predict`  | Realiza a predição de risco de crédito          |
+| POST   | `/explain`  | Retorna explicabilidade SHAP por predição       |
 
 ---
 
 ### `GET /health`
-
-Retorna o status da API e informações sobre o modelo carregado.
-
-#### Exemplo de resposta
 
 ```json
 {
@@ -170,7 +192,7 @@ Retorna o status da API e informações sobre o modelo carregado.
     "type": "RandomForestClassifier",
     "n_estimators": 200,
     "max_depth": 10,
-    "n_features": 13
+    "n_features": 253
   },
   "api_version": "1.0.0"
 }
@@ -180,45 +202,23 @@ Retorna o status da API e informações sobre o modelo carregado.
 
 ### `POST /predict`
 
-Recebe o perfil financeiro do cliente e retorna a predição de inadimplência.
-
 #### Validações dos campos
 
-| Campo                 | Tipo  | Restrições                          |
-|-----------------------|-------|-------------------------------------|
-| `loan_amnt`           | float | > 0, ≤ 1.000.000                   |
-| `int_rate`            | float | > 0, ≤ 100                         |
-| `annual_inc`          | float | > 0, ≤ 10.000.000                  |
-| `dti`                 | float | ≥ 0, ≤ 100                         |
-| `delinq_2yrs`         | int   | ≥ 0, ≤ 100                         |
-| `fico_range_low`      | float | ≥ 300, ≤ 850                       |
-| `open_acc`            | int   | ≥ 0, ≤ 200                         |
-| `pub_rec`             | int   | ≥ 0, ≤ 100                         |
-| `revol_bal`           | float | ≥ 0                                |
-| `revol_util`          | float | ≥ 0, ≤ 150                         |
-| `total_acc`           | int   | ≥ 0, ≤ 500                         |
-| `mort_acc`            | int   | ≥ 0, ≤ 100                         |
-| `pub_rec_bankruptcies`| int   | ≥ 0, ≤ 20                          |
-
-#### Exemplo de requisição
-
-```json
-{
-  "loan_amnt": 15000,
-  "int_rate": 13.5,
-  "annual_inc": 65000,
-  "dti": 18.4,
-  "delinq_2yrs": 0,
-  "fico_range_low": 680,
-  "open_acc": 10,
-  "pub_rec": 0,
-  "revol_bal": 12000,
-  "revol_util": 45.0,
-  "total_acc": 22,
-  "mort_acc": 1,
-  "pub_rec_bankruptcies": 0
-}
-```
+| Campo                  | Tipo  | Restrições          |
+|------------------------|-------|---------------------|
+| `loan_amnt`            | float | > 0, ≤ 1.000.000   |
+| `int_rate`             | float | > 0, ≤ 100         |
+| `annual_inc`           | float | > 0, ≤ 10.000.000  |
+| `dti`                  | float | ≥ 0, ≤ 100         |
+| `delinq_2yrs`          | int   | ≥ 0, ≤ 100         |
+| `fico_range_low`       | float | ≥ 300, ≤ 850       |
+| `open_acc`             | int   | ≥ 0, ≤ 200         |
+| `pub_rec`              | int   | ≥ 0, ≤ 100         |
+| `revol_bal`            | float | ≥ 0                |
+| `revol_util`           | float | ≥ 0, ≤ 150         |
+| `total_acc`            | int   | ≥ 0, ≤ 500         |
+| `mort_acc`             | int   | ≥ 0, ≤ 100         |
+| `pub_rec_bankruptcies` | int   | ≥ 0, ≤ 20          |
 
 #### Exemplo de resposta
 
@@ -230,37 +230,68 @@ Recebe o perfil financeiro do cliente e retorna a predição de inadimplência.
 }
 ```
 
-| Campo                | Descrição                                          |
-|----------------------|----------------------------------------------------|
-| `prediction`         | `0` = Adimplente / `1` = Inadimplente              |
-| `default_probability`| Probabilidade estimada de inadimplência (0 a 1)    |
-| `label`              | Classificação textual: `Adimplente` ou `Inadimplente` |
+---
+
+### `POST /explain`
+
+Retorna as **5 features que mais influenciaram aquela predição específica** via SHAP, com direção do impacto.
+
+#### Exemplo de resposta
+
+```json
+{
+  "top_features": [
+    {
+      "feature": "last_fico_range_low",
+      "importance": 0.0535,
+      "value": 0.0,
+      "direction": "aumenta"
+    },
+    {
+      "feature": "total_rec_prncp",
+      "importance": -0.0421,
+      "value": 0.0,
+      "direction": "reduz"
+    }
+  ]
+}
+```
+
+| Campo         | Descrição                                              |
+|---------------|--------------------------------------------------------|
+| `feature`     | Nome da feature                                        |
+| `importance`  | Valor SHAP (contribuição para a predição)              |
+| `value`       | Valor da feature naquela predição                      |
+| `direction`   | `"aumenta"` ou `"reduz"` a probabilidade de inadimplência |
+
+---
+
+## 📊 Dashboard
+
+Interface React com três seções:
+
+**Predição** — formulário com os 13 campos do cliente, resultado com probabilidade, zona de risco e explicabilidade SHAP mostrando as 5 features mais influentes com direção (↑ aumenta / ↓ reduz risco).
+
+**Histórico** — tabela com todas as predições da sessão, incluindo horário, resultado, probabilidade, FICO, valor do empréstimo, renda, DTI e taxa.
+
+**Modelo** — informações do modelo carregado, métricas de treino, distribuição de adimplentes/inadimplentes da sessão e stats gerais.
 
 ---
 
 ## 🧪 Testes
 
-O projeto inclui testes automatizados com **pytest** que rodam sem precisar do `model.pkl` (usando mock do modelo).
-
-### Instalar dependências de teste
+Testes automatizados com pytest que rodam **sem precisar do `model.pkl`** (usa mock).
 
 ```bash
 pip install pytest httpx
-```
-
-### Rodar os testes
-
-```bash
 pytest tests/test_api.py -v
 ```
 
-### Cobertura dos testes (15 testes)
-
-| Categoria             | Testes                                                        |
-|-----------------------|---------------------------------------------------------------|
-| Health endpoints      | `/` retorna ok, `/health` retorna info do modelo              |
-| Predição              | Inadimplente, Adimplente, label correto                       |
-| Validação de inputs   | loan_amnt negativo/zero, int_rate > 100, fico fora do range, revol_util > 150, dti > 100, delinq negativo, campo faltando, payload válido |
+| Categoria           | Cobertura                                                      |
+|---------------------|----------------------------------------------------------------|
+| Health endpoints    | `/` e `/health`                                                |
+| Predição            | Inadimplente, Adimplente, label correto                        |
+| Validação de inputs | 9 cenários de input inválido + payload válido                  |
 
 ```
 15 passed in 1.37s ✅
@@ -273,7 +304,6 @@ pytest tests/test_api.py -v
 - Balanceamento de classes (SMOTE / class_weight)
 - Teste com XGBoost e LightGBM
 - Deploy em nuvem (Railway, Render ou AWS)
-- Interface web para input de clientes
 - Pipeline de treino com MLflow para rastreamento de experimentos
 
 ---
